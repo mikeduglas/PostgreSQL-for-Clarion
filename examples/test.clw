@@ -1,21 +1,21 @@
   PROGRAM
-  PRAGMA('compile(CWUTIL.CLW)')
 
   INCLUDE('libpq.inc'), ONCE
 
   MAP
     Test1()
     Test2()
+    Test3()   !- events
     INCLUDE('CWUTIL.INC'),ONCE
   END
 
   CODE
-  Test2()
+  Test3()
   
-Test2                         PROCEDURE()
+Test3                         PROCEDURE()
 dbconn                          TPostgreConn
-conninfo                        STRING(256)
 res                             TPostgreRes
+evtHandler                      TPostgreEvent
 DataQ                           QUEUE
 i                                 LONG
 t                                 STRING(20)
@@ -25,27 +25,23 @@ qIndex                          LONG, AUTO
 cIndex                          LONG, AUTO
 ba                              &STRING
   CODE
-!  conninfo = 'dbname = postgres user=postgres password=1234'
- 
   !- Make a connection to the database.
   !- Check to see that the backend connection was successfully made.
-!  IF NOT dbconn.Connect(conninfo)
-!    MESSAGE('Connection to database failed: '& dbconn.ErrMsg())
-!    RETURN
-!  END
   IF NOT dbconn.Connect('localhost', '', 'postgres', 'postgres', '1234')
     MESSAGE('Connection to database failed: '& dbconn.ErrMsg())
     RETURN
   END
 
-!  dbconn.Exec('SET bytea_output = escape', res)
-  dbconn.Exec('SET bytea_output = hex', res)
-  IF NOT res.IsOk()
-    MESSAGE('SET bytea_output failed: '& dbconn.ErrMsg())
+  IF NOT dbconn.RegisterEventhandler(evtHandler)
+    MESSAGE('Cannot register PGEventProc')
     RETURN
   END
 
-!  dbconn.Exec('SELECT * FROM test1', res)
+  IF dbconn.Ping() <> PQPING_OK
+    MESSAGE('PING error')
+    RETURN
+  END
+  
   dbconn.Exec('SELECT i,t,b FROM test1', res)
   IF NOT res.IsOk()
     MESSAGE('SELECT failed: '& dbconn.ErrMsg())
@@ -58,9 +54,9 @@ ba                              &STRING
     pq::DebugInfo('   i='& DataQ:i)
     pq::DebugInfo('   t='& DataQ:t)
     !- byte array
-    LOOP cIndex = 1 TO 20
+!    LOOP cIndex = 1 TO 20
 !      pq::DebugInfo('   b['& cIndex &']='& ByteToHex(VAL(DataQ:b[cIndex])))
-    END
+!    END
   END
   
   ba &= res.GetByteArray(1, 3)
@@ -72,8 +68,61 @@ ba                              &STRING
 
   dbconn.Disconnect()
   MESSAGE('Done!')
+  
+  
+Test2                         PROCEDURE()
+dbconn                          TPostgreConn
+res                             TPostgreRes
+DataQ                           QUEUE
+i                                 LONG
+t                                 STRING(20)
+b                                 STRING(20)
+                                END
+qIndex                          LONG, AUTO
+cIndex                          LONG, AUTO
+ba                              &STRING
+  CODE
+  !- Make a connection to the database.
+  !- Check to see that the backend connection was successfully made.
+  IF NOT dbconn.Connect('localhost', '', 'postgres', 'postgres', '1234')
+    MESSAGE('Connection to database failed: '& dbconn.ErrMsg())
+    RETURN
+  END
 
+  
+!  dbconn.Exec('SET bytea_output = escape', res)
+!  dbconn.Exec('SET bytea_output = hex', res)
+!  IF NOT res.IsOk()
+!    MESSAGE('SET bytea_output failed: '& dbconn.ErrMsg())
+!    RETURN
+!  END
 
+  dbconn.Exec('SELECT i,t,b FROM test1', res)
+  IF NOT res.IsOk()
+    MESSAGE('SELECT failed: '& dbconn.ErrMsg())
+    RETURN
+  END
+
+  res.ToQueue(DataQ)
+  LOOP qIndex = 1 TO RECORDS(DataQ)
+    GET(DataQ, qIndex)
+    pq::DebugInfo('   i='& DataQ:i)
+    pq::DebugInfo('   t='& DataQ:t)
+    !- byte array
+!    LOOP cIndex = 1 TO 20
+!      pq::DebugInfo('   b['& cIndex &']='& ByteToHex(VAL(DataQ:b[cIndex])))
+!    END
+  END
+  
+  ba &= res.GetByteArray(1, 3)
+  pq::DebugInfo('   LEN(ba)='& LEN(ba))
+  LOOP cIndex = 1 TO 20
+    pq::DebugInfo('   b['& cIndex &']='& ByteToHex(VAL(ba[cIndex])))
+  END
+  DISPOSE(ba)
+
+  dbconn.Disconnect()
+  MESSAGE('Done!')
 
 
 Test1                         PROCEDURE()
@@ -121,12 +170,16 @@ datacl                            STRING(256)
   !- a good example.
   
   !- Start a transaction block
-  dbconn.Exec('BEGIN', res)
-  IF NOT res.IsOk()
+!  dbconn.Exec('BEGIN', res)
+!  IF NOT res.IsOk()
+!    MESSAGE('BEGIN failed: '& dbconn.ErrMsg())
+!    RETURN
+!  END
+  IF NOT dbconn.BeginTran()
     MESSAGE('BEGIN failed: '& dbconn.ErrMsg())
     RETURN
   END
-
+  
   !- Fetch rows from pg_database, the system catalog of databases
   dbconn.Exec('DECLARE myportal CURSOR FOR select * from pg_database', res)
   IF NOT res.IsOk()
@@ -203,7 +256,8 @@ datacl                            STRING(256)
   dbconn.Exec('CLOSE myportal')
   
   !- end the transaction
-  dbconn.Exec('END')
+!  dbconn.Exec('END')
+  dbconn.EndTran()
 
   dbconn.Disconnect()
   

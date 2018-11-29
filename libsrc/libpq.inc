@@ -67,6 +67,43 @@ dispchar                        &CSTRING
 dispsize                        LONG
                               END
 
+!- events
+PGEventId                     EQUATE(LONG)
+                              ITEMIZE(0)
+PGEVT_REGISTER                  EQUATE
+PGEVT_CONNRESET                 EQUATE
+PGEVT_CONNDESTROY               EQUATE
+PGEVT_RESULTCREATE              EQUATE
+PGEVT_RESULTCOPY                EQUATE
+PGEVT_RESULTDESTROY             EQUATE
+                              END
+
+TPGEventRegister              GROUP, TYPE
+conn                            PGconn
+                              END
+
+TPGEventConnReset             GROUP, TYPE
+conn                            PGconn
+                              END
+
+TPGEventConnDestroy           GROUP, TYPE
+conn                            PGconn
+                              END
+
+TPGEventResultCreate          GROUP, TYPE
+conn                            PGconn
+result                          PGresult
+                              END
+
+TPGEventResultCopy            GROUP, TYPE
+src                             PGresult
+dest                            PGresult
+                              END
+
+
+TPGEventResultDestroy         GROUP, TYPE
+result                          PGresult
+                              END
 
   MAP
     MODULE('libpq')
@@ -81,14 +118,28 @@ conn                            PGconn, PROTECTED   !- connection handler
 Construct                       PROCEDURE()
 Destruct                        PROCEDURE(), VIRTUAL
 
-Connect                         PROCEDURE(STRING pConnInfo), BOOL
-Connect                         PROCEDURE(STRING pghost, STRING pgport, STRING dbName, STRING login, STRING pwd, <STRING pgoptions>, <STRING pgtty>), BOOL
-Disconnect                      PROCEDURE()
-Reset                           PROCEDURE()
+RegisterEventhandler            PROCEDURE(*TPostgreEvent evtHandler), BOOL, PROC
+
+Connect                         PROCEDURE(STRING pConnInfo), BOOL, VIRTUAL
+Connect                         PROCEDURE(STRING pghost, STRING pgport, STRING dbName, STRING login, STRING pwd, <STRING pgoptions>, <STRING pgtty>), BOOL, VIRTUAL
+Disconnect                      PROCEDURE(), VIRTUAL
+Reset                           PROCEDURE(), VIRTUAL
 
 Status                          PROCEDURE(), ConnStatusType
+Ping                            PROCEDURE(<STRING pConnInfo>), PGPing, VIRTUAL
 
-Exec                            PROCEDURE(STRING pCommand, <*TPostgreRes pRes>)
+Host                            PROCEDURE(), STRING
+Port                            PROCEDURE(), STRING
+DbName                          PROCEDURE(), STRING
+User                            PROCEDURE(), STRING
+Pass                            PROCEDURE(), STRING
+
+Exec                            PROCEDURE(STRING pCommand, <*TPostgreRes pRes>), VIRTUAL
+
+BeginTran                       PROCEDURE(), BOOL, PROC !- just calls Exec('BEGIN')
+EndTran                         PROCEDURE(), BOOL, PROC !- just calls Exec('END')
+CommitTran                      PROCEDURE(), BOOL, PROC !- just calls Exec('COMMIT')
+RollbackTran                    PROCEDURE(), BOOL, PROC !- just calls Exec('ROLLBACK')
 
 ErrMsg                          PROCEDURE(), STRING
                               END
@@ -96,11 +147,12 @@ ErrMsg                          PROCEDURE(), STRING
 
 TPostgreRes                   CLASS, TYPE, MODULE('libpq.clw'), LINK('libpq.clw')
 res                             PGresult, PROTECTED
+conn                            PGconn, PROTECTED   !- connection handler
 
 Construct                       PROCEDURE()
 Destruct                        PROCEDURE(), VIRTUAL
 
-Init                            PROCEDURE(PGconn res)
+Init                            PROCEDURE(PGresult res, PGconn conn)
 Kill                            PROCEDURE()
 
 Status                          PROCEDURE(), ExecStatusType
@@ -119,4 +171,13 @@ UnescapeBinary                  PROCEDURE(STRING from_str), *STRING
 
 ToGroup                         PROCEDURE(*GROUP pGrp, LONG row_number = 1, BOOL matchByFieldNumber = FALSE)
 ToQueue                         PROCEDURE(*QUEUE pQ, BOOL matchByFieldNumber = FALSE)
+                              END
+
+TPostgreEvent                 CLASS, TYPE, MODULE('libpq.clw'), LINK('libpq.clw')
+Register                        PROCEDURE(LONG evtInfo), BOOL, VIRTUAL, PROTECTED
+ConnReset                       PROCEDURE(LONG evtInfo), BOOL, VIRTUAL, PROTECTED
+ConnDestroy                     PROCEDURE(LONG evtInfo), BOOL, VIRTUAL, PROTECTED
+ResultCreate                    PROCEDURE(LONG evtInfo), BOOL, VIRTUAL, PROTECTED
+ResultCopy                      PROCEDURE(LONG evtInfo), BOOL, VIRTUAL, PROTECTED
+ResultDestroy                   PROCEDURE(LONG evtInfo), BOOL, VIRTUAL, PROTECTED
                               END
