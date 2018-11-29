@@ -3,15 +3,14 @@
 This is the Clarion application programmer's interface to PostgreSQL.
 
 ## Requirements  
-C6.3 and newer.
-PostgreSQL 9.4 and newer.
+- C6.3 and newer.
+- PostgreSQL 9.4 and newer.
 
 ## How to install
 Hit the 'Clone or Download' button and select 'Download Zip'.  
 Now unzip zip file into a temporary folder somewhere.
 
-Copy the contents of "libsrc" folder into %ClarionRoot%\Accessory\libsrc\win  
-where %ClarionRoot% is the folder into which you installed Clarion.
+Copy the contents of bin, lib and libsrc folders into %ClarionRoot%\Accessory folder.
 
 ## How to use
 See examples/test.clw.
