@@ -135,6 +135,7 @@ User                            PROCEDURE(), STRING
 Pass                            PROCEDURE(), STRING
 
 Exec                            PROCEDURE(STRING pCommand, <*TPostgreRes pRes>), VIRTUAL
+ExecAsJson                      PROCEDURE(STRING pCommand), STRING, VIRTUAL
 
 BeginTran                       PROCEDURE(), BOOL, PROC !- just calls Exec('BEGIN')
 EndTran                         PROCEDURE(), BOOL, PROC !- just calls Exec('END')
