@@ -20,8 +20,11 @@ See examples/test.clw.
 - <mikeduglas66@gmail.com>
 
 ## Version history
+v0.99b (02.12.2018)
+- NEW: Asynchronous commands.
+
 v0.99a (30.11.2018)
-- NEW: ability to return server response as JSON string
+- NEW: ability to return server response as JSON string.
 
 v0.99 (29.11.2018)
 - NEW: Reset, Ping, transactions, connection properties, events.

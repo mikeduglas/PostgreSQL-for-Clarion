@@ -5,57 +5,73 @@ Oid                           EQUATE(LONG)
 PostgresPollingStatusType     EQUATE(LONG)
                               ITEMIZE(0)
 PGRES_POLLING_FAILED            EQUATE
-PGRES_POLLING_READING           EQUATE
-PGRES_POLLING_WRITING           EQUATE
+PGRES_POLLING_READING           EQUATE      !- These two indicate that one may
+PGRES_POLLING_WRITING           EQUATE      !- use select before polling again.
 PGRES_POLLING_OK                EQUATE
-PGRES_POLLING_ACTIVE            EQUATE
+PGRES_POLLING_ACTIVE            EQUATE      !- unused; keep for awhile for backwards compatibility
                               END
 
 PGPing                        EQUATE(LONG)
                               ITEMIZE(0)
-PQPING_OK                       EQUATE
-PQPING_REJECT                   EQUATE
-PQPING_NO_RESPONSE              EQUATE
-PQPING_NO_ATTEMPT               EQUATE
+PQPING_OK                       EQUATE      !- server is accepting connections
+PQPING_REJECT                   EQUATE      !- server is alive but rejecting connections
+PQPING_NO_RESPONSE              EQUATE      !- could not establish connection
+PQPING_NO_ATTEMPT               EQUATE      !- connection not attempted (bad params)
                               END
 
 ConnStatusType                EQUATE(LONG)
                               ITEMIZE(0)
 CONNECTION_OK                   EQUATE
 CONNECTION_BAD                  EQUATE
-CONNECTION_STARTED              EQUATE
-CONNECTION_MADE                 EQUATE
-CONNECTION_AWAITING_RESPONSE    EQUATE
-CONNECTION_AUTH_OK              EQUATE
-CONNECTION_SETENV               EQUATE
-CONNECTION_SSL_STARTUP          EQUATE
-CONNECTION_NEEDED               EQUATE
+!- Non-blocking mode only below here
+CONNECTION_STARTED              EQUATE      !- Waiting for connection to be made.
+CONNECTION_MADE                 EQUATE      !- Connection OK; waiting to send.
+CONNECTION_AWAITING_RESPONSE    EQUATE      !- Waiting for a response from the postmaster.
+CONNECTION_AUTH_OK              EQUATE      !- Received authentication; waiting for backend startup.
+CONNECTION_SETENV               EQUATE      !- Negotiating environment.
+CONNECTION_SSL_STARTUP          EQUATE      !- Negotiating SSL.
+CONNECTION_NEEDED               EQUATE      !- Internal state: connect() needed
 CONNECTION_CHECK_WRITABLE       EQUATE
 CONNECTION_CONSUME              EQUATE
                               END
 
 PGTransactionStatusType       EQUATE(LONG)
                               ITEMIZE(0)
-PQTRANS_IDLE                    EQUATE
-PQTRANS_ACTIVE                  EQUATE
-PQTRANS_INTRANS                 EQUATE
-PQTRANS_INERROR                 EQUATE
-PQTRANS_UNKNOWN                 EQUATE
+PQTRANS_IDLE                    EQUATE      !- connection idle
+PQTRANS_ACTIVE                  EQUATE      !- command in progress
+PQTRANS_INTRANS                 EQUATE      !- idle, within transaction block
+PQTRANS_INERROR                 EQUATE      !- idle, within failed transaction
+PQTRANS_UNKNOWN                 EQUATE      !- cannot determine status
                               END
 
 ExecStatusType                EQUATE(LONG)
                               ITEMIZE(0)
-PGRES_EMPTY_QUERY               EQUATE
-PGRES_COMMAND_OK                EQUATE
-PGRES_TUPLES_OK                 EQUATE
-PGRES_COPY_OUT                  EQUATE
-PGRES_COPY_IN                   EQUATE
-PGRES_BAD_RESPONSE              EQUATE
-PGRES_NONFATAL_ERROR            EQUATE
-PGRES_FATAL_ERROR               EQUATE
-PGRES_COPY_BOTH                 EQUATE
-PGRES_SINGLE_TUPLE              EQUATE
+PGRES_EMPTY_QUERY               EQUATE      !- The string sent to the server was empty.
+PGRES_COMMAND_OK                EQUATE      !- Successful completion of a command returning no data.
+PGRES_TUPLES_OK                 EQUATE      !- Successful completion of a command returning data (such as a SELECT or SHOW).
+PGRES_COPY_OUT                  EQUATE      !- Copy Out (from server) data transfer started.
+PGRES_COPY_IN                   EQUATE      !- Copy In (to server) data transfer started.
+PGRES_BAD_RESPONSE              EQUATE      !- The server's response was not understood.
+PGRES_NONFATAL_ERROR            EQUATE      !- A nonfatal error (a notice or warning) occurred.
+PGRES_FATAL_ERROR               EQUATE      !- A fatal error occurred.
+PGRES_COPY_BOTH                 EQUATE      !- Copy In/Out (to and from server) data transfer started.
+PGRES_SINGLE_TUPLE              EQUATE      !- The PGresult contains a single result tuple from the current command. This status occurs only when single-row mode has been selected for the query.
                               END
+
+PGVerbosity                   EQUATE(LONG)
+                              ITEMIZE(0)
+PQERRORS_TERSE                  EQUATE      !- single-line error messages
+PQERRORS_DEFAULT                EQUATE      !- recommended style
+PQERRORS_VERBOSE                EQUATE      !- all the facts, ma'am
+                              END
+
+PGContextVisibility           EQUATE(LONG)
+                              ITEMIZE(0)
+PQSHOW_CONTEXT_NEVER            EQUATE      !- never show CONTEXT field
+PQSHOW_CONTEXT_ERRORS           EQUATE      !- show CONTEXT for errors only (default)
+PQSHOW_CONTEXT_ALWAYS           EQUATE      !- always show CONTEXT field
+                              END
+
 
 PQconninfoOption              GROUP, TYPE
 keyword                         &CSTRING
@@ -137,6 +153,11 @@ Pass                            PROCEDURE(), STRING
 Exec                            PROCEDURE(STRING pCommand, <*TPostgreRes pRes>), VIRTUAL
 ExecAsJson                      PROCEDURE(STRING pCommand), STRING, VIRTUAL
 
+ExecAsync                       PROCEDURE(STRING pCommand, BOOL pSingleRowMode = FALSE), BOOL, VIRTUAL
+GetResultAsync                  PROCEDURE(*TPostgreRes pRes), BOOL
+OnsumeInput                     PROCEDURE(), BOOL
+IsBusy                          PROCEDURE(), BOOL
+
 BeginTran                       PROCEDURE(), BOOL, PROC !- just calls Exec('BEGIN')
 EndTran                         PROCEDURE(), BOOL, PROC !- just calls Exec('END')
 CommitTran                      PROCEDURE(), BOOL, PROC !- just calls Exec('COMMIT')
@@ -157,7 +178,10 @@ Init                            PROCEDURE(PGresult res, PGconn conn)
 Kill                            PROCEDURE()
 
 Status                          PROCEDURE(), ExecStatusType
+StatusText                      PROCEDURE(), STRING
 IsOk                            PROCEDURE(), BOOL !- retruns true for PGRES_COMMAND_OK or PGRES_TUPLES_OK
+ErrMsg                          PROCEDURE(), STRING
+VerboseErrMsg                   PROCEDURE(PGVerbosity verbosity = PQERRORS_DEFAULT, PGContextVisibility show_context = PQSHOW_CONTEXT_ERRORS), STRING
 
 NumFields                       PROCEDURE(), LONG
 FieldName                       PROCEDURE(LONG column_number), STRING

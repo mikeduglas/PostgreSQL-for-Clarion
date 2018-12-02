@@ -11,7 +11,7 @@
   END
 
   CODE
-  Test4()
+  Test3()
   
 Test4                         PROCEDURE()
 dbconn                          TPostgreConn
@@ -64,9 +64,11 @@ ba                              &STRING
     RETURN
   END
   
-  dbconn.Exec('SELECT i,t,b FROM test1', res)
+!  dbconn.Exec('SELECT i,t,b FROM test1', res)
+  dbconn.Exec('SELECT i,t,x FROM test1', res)    !- invalid SELECT (column 'x' doesn't exist)
   IF NOT res.IsOk()
-    MESSAGE('SELECT failed: '& dbconn.ErrMsg())
+    MESSAGE('SELECT failed: '& res.ErrMsg())
+!    MESSAGE('SELECT failed: '& res.VerboseErrMsg())
     RETURN
   END
 
