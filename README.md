@@ -20,6 +20,15 @@ See examples/test.clw.
 - <mikeduglas66@gmail.com>
 
 ## Version history
+v1.01 (07.03.2020)
+- NEW: ExecF method: allows to call Exec with up to 10 formatted parameters, like [printf function](https://github.com/mikeduglas/printf).
+- NEW: Methods supporting prepared statements: Prepare, ExecPrepared.
+- FIX: a typo in ConsumeInput method name.
+- CHG: more examples.
+
+v1.00 (09.01.2020)
+- minor chamges.
+
 v0.99b (02.12.2018)
 - NEW: Asynchronous commands.
 

@@ -1,3 +1,7 @@
+!* PostgreSQL direct access (lippq.dll)
+!* mikeduglas@yandex.ru 2020
+!* v1.01 (07.03.2020)
+
 PGconn                        EQUATE(LONG)
 PGresult                      EQUATE(LONG)
 Oid                           EQUATE(LONG)
@@ -127,6 +131,14 @@ result                          PGresult
     END
   END
 
+TPreparedParam                GROUP, TYPE
+Value                           ANY
+Length                          LONG  !- length of a value as string
+Format                          LONG  !- whether parameters are text (0) or binary (1)
+                              END
+TPreparedParams               QUEUE(TPreparedParam), TYPE
+                              END
+
 
 TPostgreConn                  CLASS, TYPE, MODULE('libpq.clw'), LINK('libpq.clw')
 conn                            PGconn, PROTECTED   !- connection handler
@@ -151,11 +163,16 @@ User                            PROCEDURE(), STRING
 Pass                            PROCEDURE(), STRING
 
 Exec                            PROCEDURE(STRING pCommand, <*TPostgreRes pRes>), VIRTUAL
+ExecF                           PROCEDURE(STRING pCommand, <*TPostgreRes pRes>, <? p1>,  <? p2>,  <? p3>,  <? p4>,  <? p5>,  <? p6>,  <? p7>,  <? p8>,  <? p9>,  <? p10>), VIRTUAL
 ExecAsJson                      PROCEDURE(STRING pCommand), STRING, VIRTUAL
+
+Prepare                         PROCEDURE(STRING stmtName, STRING query, LONG nParams, *Oid[] paramTypes, <*TPostgreRes pRes>), VIRTUAL
+ExecPrepared                    PROCEDURE(STRING stmtName, TPreparedParams paramValues, <*TPostgreRes pRes>), VIRTUAL
+ExecPrepared                    PROCEDURE(STRING stmtName, TPreparedParams paramValues, LONG resultFormat, <*TPostgreRes pRes>), VIRTUAL
 
 ExecAsync                       PROCEDURE(STRING pCommand, BOOL pSingleRowMode = FALSE), BOOL, VIRTUAL
 GetResultAsync                  PROCEDURE(*TPostgreRes pRes), BOOL
-OnsumeInput                     PROCEDURE(), BOOL
+ConsumeInput                    PROCEDURE(), BOOL
 IsBusy                          PROCEDURE(), BOOL
 
 BeginTran                       PROCEDURE(), BOOL, PROC !- just calls Exec('BEGIN')
@@ -179,7 +196,7 @@ Kill                            PROCEDURE()
 
 Status                          PROCEDURE(), ExecStatusType
 StatusText                      PROCEDURE(), STRING
-IsOk                            PROCEDURE(), BOOL !- retruns true for PGRES_COMMAND_OK or PGRES_TUPLES_OK
+IsOk                            PROCEDURE(), BOOL !- returns true for PGRES_COMMAND_OK or PGRES_TUPLES_OK
 ErrMsg                          PROCEDURE(), STRING
 VerboseErrMsg                   PROCEDURE(PGVerbosity verbosity = PQERRORS_DEFAULT, PGContextVisibility show_context = PQSHOW_CONTEXT_ERRORS), STRING
 
