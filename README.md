@@ -19,6 +19,9 @@ See examples/test.clw.
 - <mikeduglas@yandex.ru>
 - <mikeduglas66@gmail.com>
 
+## Price
+- $200 (PayPal)
+
 ## Version history
 v1.01 (07.03.2020)
 - NEW: ExecF method: allows to call Exec with up to 10 formatted parameters, like [printf function](https://github.com/mikeduglas/printf).
