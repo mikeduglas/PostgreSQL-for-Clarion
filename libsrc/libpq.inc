@@ -1,6 +1,7 @@
 !* PostgreSQL direct access (lippq.dll)
 !* mikeduglas@yandex.ru 2020
-!* v1.01 (07.03.2020)
+!* mikeduglas66@gmail.com 2020
+!* v1.02 (25.04.2020)
 
 PGconn                        EQUATE(LONG)
 PGresult                      EQUATE(LONG)
@@ -124,10 +125,16 @@ dest                            PGresult
 TPGEventResultDestroy         GROUP, TYPE
 result                          PGresult
                               END
+  
+  INCLUDE('svapi.inc'), ONCE
 
   MAP
     MODULE('libpq')
       pq::DebugInfo(STRING pMsg)
+
+      pq::ConvertEncoding(STRING pInput, UNSIGNED pInputCodepage, UNSIGNED pOutputCodepage), STRING
+      pq::FromUtf8(STRING pInput, UNSIGNED pCodepage = CP_ACP), STRING
+      pq::ToUtf8(STRING pInput, UNSIGNED pCodepage = CP_ACP), STRING
     END
   END
 
@@ -143,8 +150,13 @@ TPreparedParams               QUEUE(TPreparedParam), TYPE
 TPostgreConn                  CLASS, TYPE, MODULE('libpq.clw'), LINK('libpq.clw')
 conn                            PGconn, PROTECTED   !- connection handler
 
+serverEncoding                  LONG, PROTECTED
+clientEncoding                  LONG, PROTECTED
+
 Construct                       PROCEDURE()
 Destruct                        PROCEDURE(), VIRTUAL
+
+SetEncodings                    PROCEDURE(LONG pServerEncoding = CP_ACP, LONG pClientEncoding = CP_ACP)
 
 RegisterEventhandler            PROCEDURE(*TPostgreEvent evtHandler), BOOL, PROC
 
@@ -188,11 +200,16 @@ TPostgreRes                   CLASS, TYPE, MODULE('libpq.clw'), LINK('libpq.clw'
 res                             PGresult, PROTECTED
 conn                            PGconn, PROTECTED   !- connection handler
 
+serverEncoding                  LONG, PROTECTED
+clientEncoding                  LONG, PROTECTED
+
 Construct                       PROCEDURE()
 Destruct                        PROCEDURE(), VIRTUAL
 
-Init                            PROCEDURE(PGresult res, PGconn conn)
+Init                            PROCEDURE(PGresult res, PGconn conn, LONG pServerEncoding = CP_ACP, LONG pClientEncoding = CP_ACP)
 Kill                            PROCEDURE()
+
+SetEncodings                    PROCEDURE(LONG pServerEncoding = CP_ACP, LONG pClientEncoding = CP_ACP)
 
 Status                          PROCEDURE(), ExecStatusType
 StatusText                      PROCEDURE(), STRING
@@ -222,4 +239,26 @@ ConnDestroy                     PROCEDURE(LONG evtInfo), BOOL, VIRTUAL, PROTECTE
 ResultCreate                    PROCEDURE(LONG evtInfo), BOOL, VIRTUAL, PROTECTED
 ResultCopy                      PROCEDURE(LONG evtInfo), BOOL, VIRTUAL, PROTECTED
 ResultDestroy                   PROCEDURE(LONG evtInfo), BOOL, VIRTUAL, PROTECTED
+                              END
+
+!!!<summary>
+!!!This class allows to display result set returned from Exec(sql) method in a virtual listbox (number of rows and columns and column headers come from result set).
+!!!</summary>
+TPostgreViewer                CLASS(TPostgreConn), TYPE, MODULE('libpq.clw'), LINK('libpq.clw')
+listFeq                         SIGNED, PROTECTED
+ColNames                        &TCBNames, PROTECTED
+ColValues                       &TCBValues, PROTECTED
+nChanges                        LONG, PROTECTED
+
+columnFormat                    STRING(255) !- format string for each column, by default '42L(2)|M~%s~L(1)@s255@'; %s will be changed by column header.
+
+Construct                       PROCEDURE()
+Destruct                        PROCEDURE(), DERIVED
+
+SetListbox                      PROCEDURE(SIGNED pFeq)
+
+Exec                            PROCEDURE(STRING pCommand, <*TPostgreRes pRes>), DERIVED
+VLBproc                         PROCEDURE(LONG row, SHORT column), STRING, VIRTUAL, PROTECTED  !- data source for virtual list box
+ 
+PrintIt                         PROCEDURE()
                               END

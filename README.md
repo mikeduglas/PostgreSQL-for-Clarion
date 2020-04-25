@@ -24,8 +24,9 @@ See examples/test.clw.
 
 ## Version history
 v1.02 (25.04.2020)
-- NEW: TPostgreViewer class to display query results in virtual listbox
-- NEW: Test6 example (query viewer)
+- NEW: SetEncodings methods for Unicode support.
+- NEW: TPostgreViewer class to display query results in virtual listbox.
+- NEW: Test6 example (query viewer).
 
 v1.01 (07.03.2020)
 - NEW: ExecF method: allows to call Exec with up to 10 formatted parameters, like [printf function](https://github.com/mikeduglas/printf).
