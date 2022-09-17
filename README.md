@@ -19,8 +19,9 @@ See examples/test.clw.
 - <mikeduglas@yandex.ru>
 - <mikeduglas66@gmail.com>
 
-## Price
-- $200
+
+[Buy now](https://www.clarionshop.com/checkout.cfm?pid=1653&q=1&)
+
 
 ## Version history
 v1.02 (25.04.2020)
