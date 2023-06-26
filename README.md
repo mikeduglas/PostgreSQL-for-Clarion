@@ -13,7 +13,7 @@ Now unzip zip file into a temporary folder somewhere.
 Copy the contents of bin, lib and libsrc folders into %ClarionRoot%\Accessory folder.
 
 ## How to use
-See examples/test.clw.
+See examples folder.
 
 ## Contacts
 - <mikeduglas@yandex.ru>
@@ -24,6 +24,14 @@ See examples/test.clw.
 
 
 ## Version history
+v1.03 (26.06.2023)
+- NEW: TPostgreConn.GetPID method returns the process ID (PID) of the backend process handling this connection.
+- NEW: TPostgreConn.Notify method sends a notification event together with an optional “payload” string to each client application that has previously executed LISTEN channel for the specified channel name in the current database. Notifications are visible to all users.
+- NEW: TPostgreConn.Listen method registers the current session as a listener on the notification channel named channel.
+- NEW: TPostgreConn.Unlisten method stops listening for a notification.
+- NEW: TPostgreConn.TakeNotifications method returns a list of notification messages received from the server.
+- NEW: Test8.clw: Test of the asynchronous notification interface.
+
 v1.02 (25.04.2020)
 - NEW: SetEncodings methods for Unicode support.
 - NEW: TPostgreViewer class to display query results in virtual listbox.
